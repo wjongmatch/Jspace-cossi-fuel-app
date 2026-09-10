@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="油耗分析">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>油耗分析</title>
+<style>
+:root{
+  --bg:#050b14;--panel:#0d1827;--panel2:#122238;--line:#203652;
+  --text:#f8fafc;--muted:#9eb0c6;--blue:#2f9df4;--green:#39d49a;
+  --yellow:#f5c84b;--red:#ff5d70;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(circle at 50% -10%,#16314f 0,#050b14 38%);color:var(--text);
+font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}
+body{padding-bottom:calc(92px + env(safe-area-inset-bottom));font-size:18px;line-height:1.45}
+.app{max-width:760px;margin:auto;padding:14px 14px 32px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:8px 3px 6px}
+.top h1{font-size:34px;margin:0;font-weight:900;letter-spacing:.4px;line-height:1.1}
+.top small{display:block;color:#b8c8d9;margin-top:6px;font-size:15px}
+.card{background:linear-gradient(145deg,#101f33,#091421);border:1px solid #284362;
+border-radius:22px;padding:17px;margin-top:13px;box-shadow:0 12px 34px #0006}
+.carCard{padding:0;overflow:hidden;background:#000}
+.carCard img{display:block;width:100%;height:auto}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.kpi{background:var(--panel2);border:1px solid #1e3553;border-radius:15px;padding:14px}
+.kpi b{font-size:27px;line-height:1.05}
+.kpi span{display:block;font-size:14px;color:#b4c3d3;margin-top:6px}
+.title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.title h2{font-size:22px;margin:0;font-weight:850}.muted{font-size:14px;color:#aebfd1}
+.chart{height:285px;margin-top:12px}.chart svg{width:100%;height:100%;overflow:visible}
+.axis{stroke:#29405e;stroke-width:1}.trend{fill:none;stroke:var(--blue);stroke-width:4}
+.dot{fill:#fff;stroke:var(--blue);stroke-width:3.5}.lab{fill:#c0cede;font-size:15px;font-weight:650}.val{fill:#fff;font-size:15px;font-weight:850}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}
+label{display:block;color:#edf4fb;font-size:16px;margin-bottom:8px;font-weight:800}
+input,select{width:100%;background:#081321;color:#fff;border:1px solid #355171;border-radius:14px;padding:15px;font-size:19px;outline:none;min-height:54px}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2f9df422}
+.checkrow{display:flex;align-items:flex-start;gap:11px;background:#0a1626;border:1px solid #28405d;border-radius:14px;padding:13px}
+.checkrow input{width:22px;height:22px;margin-top:1px}
+.checkrow b{font-size:17px}.hint{font-size:14px;line-height:1.65;color:#aebed0;margin-top:8px}
+.btns{display:flex;gap:9px;margin-top:14px}
+.btn{border:0;border-radius:14px;padding:14px 16px;font-size:17px;font-weight:850;cursor:pointer;min-height:50px}
+.btns .btn{flex:1}.primary{background:var(--blue);color:#031929}.secondary{background:#263a55;color:#eaf4ff}
+.danger{background:#461923;color:#ffc8cf}.dangerSolid{background:#e64255;color:#fff}
+.record{background:#081320;border:1px solid #233a56;border-radius:16px;padding:14px;margin-top:10px}
+.recordHead{display:flex;justify-content:space-between;align-items:center}
+.recordHead b{font-size:20px}.pill{background:#1a5485;color:#eaf7ff;border-radius:999px;padding:6px 10px;font-size:14px;font-weight:800}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.num{background:#101e30;border-radius:11px;padding:10px}.num b{display:block;font-size:19px}.num span{display:block;font-size:13px;color:#afbed0;margin-top:4px}
+.good{color:var(--green)}.money{color:var(--yellow)}
+.settingsRow{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0a1625;border:1px solid #263c59;border-radius:14px;padding:15px;margin-top:10px}
+.settingsRow strong{font-size:16px}
+.bottom{position:fixed;z-index:20;left:0;right:0;bottom:0;background:#07111fee;backdrop-filter:blur(14px);
+border-top:1px solid #1f334c;padding:9px 10px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center}
+.nav{max-width:760px;width:100%;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav button{border:0;background:none;color:#9bacc0;font-size:14px;padding:5px 4px}.nav button.active{color:#55b6ff;font-weight:900}
+.ico{display:block;font-size:25px;line-height:28px}.hide{display:none}
+.modal{position:fixed;z-index:100;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:24px}
+.modal.show{display:flex}.modalCard{width:min(400px,100%);background:#13243a;border:1px solid #2d496a;border-radius:22px;padding:22px;text-align:center}
+.modalCard h3{font-size:23px;margin:0 0 9px}.modalCard p{font-size:15px;color:#c1cede;line-height:1.6}
+.installHint{display:none;background:#102a43;border:1px solid #235176;border-radius:13px;padding:11px;color:#ccecff;font-size:13px;margin-top:10px}
+@media(max-width:540px){
+ .grid{grid-template-columns:1fr}.full{grid-column:auto}.kpis{grid-template-columns:1fr 1fr}
+ .nums{grid-template-columns:1fr 1fr}.top h1{font-size:30px}.kpi b{font-size:23px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div><h1>油耗分析</h1><small>JSPACE Cossi</small></div>
+  <button class="btn secondary" id="installBtn">安裝到桌面</button>
+</header>
+<div class="installHint" id="installHint">Android Chrome：按「安裝 App」後會開啟系統安裝視窗，確認後桌面會出現車子圖示。iPhone/iPad 需用 Safari 的「分享 → 加入主畫面」。</div>
+
+<section id="home">
+  <div class="card carCard"><img src="jspace.png" alt="JSPACE"></div>
+  <div class="card"><div class="kpis">
+    <div class="kpi"><b id="avgKml">—</b><span>平均 km/L</span></div>
+    <div class="kpi"><b id="bestKml">—</b><span>最佳 km/L</span></div>
+    <div class="kpi"><b id="sumLiters">—</b><span>總加油 L</span></div>
+    <div class="kpi"><b id="totalKm">—</b><span>累計里程 km</span></div>
+  </div></div>
+  <div class="card"><div class="title"><h2>每月平均油耗</h2><span class="muted">km/L</span></div><div id="effChart" class="chart"></div></div>
+  <div class="card"><div class="title"><h2>每月實付油資</h2><span class="muted">NT$</span></div><div id="costChart" class="chart"></div></div>
+</section>
+
+<section id="add" class="hide">
+<div class="card">
+  <div class="title"><h2 id="formTitle">新增紀錄</h2><span class="muted">自動計算油耗</span></div>
+  <div class="grid" style="margin-top:14px">
+    <div><label>日期</label><input id="date" type="date"></div>
+    <div><label>油品</label><select id="fuel"><option>92</option><option selected>95</option><option>98</option></select></div>
+    <div><label>加油量（公升）</label><input id="liters" type="number" step="0.01" inputmode="decimal" placeholder="31.62"></div>
+    <div id="distanceWrap"><label>本次行駛里程（公里）</label><input id="distance" type="number" step="0.1" inputmode="decimal" placeholder="328.1"></div>
+
+    <div class="full">
+      <div class="checkrow">
+        <input id="meterMode" type="checkbox">
+        <div><b>忘記本次跑多少？改輸入目前里程</b>
+        <div class="hint">勾選後，會自動用目前里程減掉上一筆紀錄的里程基準。</div></div>
+      </div>
+    </div>
+
+    <div class="full hide" id="meterBox">
+      <label>目前里程（公里）</label>
+      <input id="meterReading" type="number" step="0.1" inputmode="decimal" placeholder="例如 652.5">
+      <div class="hint" id="meterCalc">輸入後會自動顯示計算結果。</div>
+    </div>
+
+    <div class="full">
+      <label>折扣後結帳金額（元，可不填）</label>
+      <input id="checkout" type="number" step="1" min="0" inputmode="decimal" placeholder="例如 980">
+      <div class="hint">有輸入時，統計直接採用這個結帳金額；沒輸入才以牌價估算。</div>
+    </div>
+  </div>
+  <div class="btns"><button class="btn primary" id="saveBtn">儲存紀錄</button><button class="btn secondary" id="cancelBtn">取消</button></div>
+</div>
+</section>
+
+<section id="records" class="hide">
+  <div class="card"><div class="title"><h2>油耗紀錄</h2><span class="muted" id="count"></span></div><div id="recordList"></div></div>
+</section>
+
+<section id="settings" class="hide">
+  <div class="card"><div class="title"><h2>資料管理</h2></div>
+    <div class="settingsRow"><div><strong>目前紀錄</strong><div class="hint" id="settingCount"></div></div><span>▤</span></div>
+    <div class="settingsRow"><div><strong>匯出 CSV</strong><div class="hint">方便用 Excel / 試算表查看</div></div><button class="btn secondary" id="exportBtn">匯出</button></div>
+    <div class="settingsRow"><div><strong>完整備份</strong><div class="hint">匯出可完整還原的 JSON 備份檔</div></div><button class="btn secondary" id="backupBtn">備份</button></div>
+    <div class="settingsRow"><div><strong>匯入還原</strong><div class="hint">換手機或清除瀏覽器資料後，可用備份檔還原</div></div><button class="btn primary" id="restoreBtn">匯入</button></div>
+    <input id="restoreFile" type="file" accept=".json,application/json" style="display:none">
+    <div class="settingsRow"><div><strong>刪除所有紀錄</strong><div class="hint">此動作無法復原</div></div><button class="btn danger" id="clearAllBtn">刪除全部</button></div>
+  </div>
+</section>
+</div>
+
+<div class="modal" id="clearModal">
+ <div class="modalCard"><h3>刪除所有紀錄</h3><p>確定刪除全部加油紀錄？所有統計資料也會一起清空，而且無法復原。</p>
+ <div class="btns"><button class="btn secondary" id="clearCancel">取消</button><button class="btn dangerSolid" id="clearConfirm">確定刪除</button></div></div>
+</div>
+
+
+<div class="modal" id="restoreModal">
+ <div class="modalCard">
+  <h3>還原備份</h3>
+  <p id="restoreSummary">讀取備份中…</p>
+  <div class="btns"><button class="btn secondary" id="restoreCancel">取消</button><button class="btn primary" id="restoreConfirm">確定還原</button></div>
+ </div>
+</div>
+
+<nav class="bottom"><div class="nav">
+<button class="active" data-page="home"><span class="ico">⌂</span>首頁</button>
+<button data-page="add"><span class="ico">＋</span>新增</button>
+<button data-page="records"><span class="ico">▤</span>紀錄</button>
+<button data-page="settings"><span class="ico">⚙</span>設定</button>
+</div></nav>
+
+<script>
+const SEED=[{"id": 1, "date": "2026-08-18", "fuel": "92", "liters": 31.96, "distance": 303.0, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 2, "date": "2026-08-20", "fuel": "92", "liters": 33.56, "distance": 282.0, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 3, "date": "2026-08-26", "fuel": "92", "liters": 31.8, "distance": 200.3, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 4, "date": "2026-08-26", "fuel": "92", "liters": 33.03, "distance": 345.9, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 5, "date": "2026-08-30", "fuel": "92", "liters": 35.83, "distance": 342.8, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 6, "date": "2026-08-29", "fuel": "92", "liters": 32.4, "distance": 304.2, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 7, "date": "2026-08-29", "fuel": "92", "liters": 27.98, "distance": 248.5, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 8, "date": "2026-09-01", "fuel": "95", "liters": 32.55, "distance": 312.0, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 9, "date": "2026-09-03", "fuel": "95", "liters": 32.41, "distance": 327.1, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 10, "date": "2026-09-07", "fuel": "95", "liters": 34.66, "distance": 324.4, "checkout": null, "meterMode": false, "meterReading": 324.4}, {"id": 11, "date": "2026-09-09", "fuel": "95", "liters": 31.62, "distance": 328.1, "checkout": null, "meterMode": true, "meterReading": 652.5}], PRICES=[["2026-08-01", 30.5, 32.0, 34.0], ["2026-09-01", 30.5, 32.0, 34.0]], KEY='oil-analysis-records-v10';
+let records=JSON.parse(localStorage.getItem(KEY)||'null')||SEED;
+let editingId=null,deferredPrompt=null;
+const $=id=>document.getElementById(id);
+
+function store(){localStorage.setItem(KEY,JSON.stringify(records))}
+function getPrice(fuel,date){
+  let row=null; PRICES.forEach(r=>{if(r[0]<=date&&(!row||r[0]>row[0]))row=r});
+  return row?row[({92:1,95:2,98:3})[fuel]]:({92:30.5,95:32,98:34})[fuel];
+}
+function calc(r){
+  const p=getPrice(r.fuel,r.date), list=r.liters*p;
+  const paid=(r.checkout!==null&&r.checkout!==undefined&&r.checkout!=='')?Number(r.checkout):list;
+  return {kmL:r.distance/r.liters,l100:r.liters/r.distance*100,p,list,paid};
+}
+function sortedChrono(exclude=null){
+  return [...records].filter(r=>r.id!==exclude).sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
+}
+function previousBaseFor(date,exclude=null){
+  const arr=sortedChrono(exclude).filter(r=>r.date<=date);
+  if(!arr.length)return null;
+  const p=arr[arr.length-1];
+  return p.meterReading!=null ? Number(p.meterReading) : Number(p.distance);
+}
+function updateMeter(){
+  const on=$('meterMode').checked;
+  $('meterBox').classList.toggle('hide',!on);
+  $('distanceWrap').classList.toggle('hide',on);
+  if(!on)return;
+  const now=Number($('meterReading').value), base=previousBaseFor($('date').value,editingId);
+  if(!now){$('meterCalc').textContent='輸入目前里程後會自動顯示計算結果。';return}
+  if(base===null){$('meterCalc').textContent='找不到上一筆里程基準，請改用手動輸入。';return}
+  const d=now-base;
+  $('meterCalc').textContent=d>0?`自動計算：${now.toFixed(1)} − ${base.toFixed(1)} = ${d.toFixed(1)} km`:'目前里程必須大於上一筆里程。';
+}
+$('meterMode').onchange=updateMeter;
+$('meterReading').oninput=updateMeter;
+$('date').onchange=updateMeter;
+
+function groupMonths(){
+  const m={};
+  records.forEach(r=>{
+    const k=r.date.slice(0,7);
+    if(!m[k])m[k]={km:0,l:0,cost:0};
+    m[k].km+=r.distance;m[k].l+=r.liters;m[k].cost+=calc(r).paid;
+  });
+  return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0]));
+}
+function chart(id,vals,fmt){
+  if(!vals.length){$(id).innerHTML='<div class="muted" style="padding:40px;text-align:center">尚無資料</div>';return}
+  const w=700,h=250,p=58;
+  let min=Math.min(...vals.map(v=>v.v)),max=Math.max(...vals.map(v=>v.v)); if(min===max){min-=1;max+=1}
+  const pts=vals.map((o,i)=>{const x=p+(w-2*p)*(vals.length===1?.5:i/(vals.length-1)), y=h-p-(h-2*p)*(o.v-min)/(max-min);return{x,y,...o}});
+  const path=pts.map((q,i)=>(i?'L':'M')+q.x+' '+q.y).join(' ');
+  const grid=[0,.5,1].map(t=>{const y=p+(h-2*p)*t,v=max-(max-min)*t;return `<line class="axis" x1="${p}" x2="${w-p}" y1="${y}" y2="${y}"/><text class="lab" x="3" y="${y+4}">${fmt(v)}</text>`}).join('');
+  const dots=pts.map(q=>`<circle class="dot" cx="${q.x}" cy="${q.y}" r="5"/><text class="val" text-anchor="middle" x="${q.x}" y="${q.y-12}">${fmt(q.v)}</text><text class="lab" text-anchor="middle" x="${q.x}" y="${h-12}">${q.k.slice(5)}月</text>`).join('');
+  $(id).innerHTML=`<svg viewBox="0 0 ${w} ${h}">${grid}<path class="trend" d="${path}"/>${dots}</svg>`;
+}
+function render(){
+  const km=records.reduce((s,r)=>s+r.distance,0), l=records.reduce((s,r)=>s+r.liters,0), avg=l?km/l:0, best=Math.max(0,...records.map(r=>calc(r).kmL));
+  $('avgKml').textContent=avg?avg.toFixed(2):'—'; $('bestKml').textContent=best?best.toFixed(2):'—';
+  $('sumLiters').textContent=l?l.toFixed(2):'—'; $('totalKm').textContent=km?km.toFixed(1):'—';
+  $('count').textContent=records.length+' 筆'; $('settingCount').textContent=records.length+' 筆加油紀錄';
+  const g=groupMonths();
+  chart('effChart',g.map(x=>({k:x[0],v:x[1].km/x[1].l})),v=>v.toFixed(2));
+  chart('costChart',g.map(x=>({k:x[0],v:x[1].cost})),v=>Math.round(v).toLocaleString());
+  const sorted=[...records].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  $('recordList').innerHTML=sorted.length?sorted.map(r=>{
+    const c=calc(r), custom=r.checkout!=null&&r.checkout!=='';
+    return `<div class="record">
+      <div class="recordHead"><b>${r.date}</b><span class="pill">${r.fuel} 無鉛</span></div>
+      <div class="nums">
+        <div class="num"><b>${r.distance.toFixed(1)}</b><span>本次 km</span></div>
+        <div class="num"><b>${r.liters.toFixed(2)}</b><span>公升</span></div>
+        <div class="num"><b class="good">${c.kmL.toFixed(2)}</b><span>km/L</span></div>
+        <div class="num"><b>${c.l100.toFixed(2)}</b><span>L/100km</span></div>
+        <div class="num"><b class="money">${c.p.toFixed(1)}</b><span>牌價/L</span></div>
+        <div class="num"><b class="money">NT$ ${Math.round(c.paid).toLocaleString()}</b><span>${custom?'實際結帳':'牌價估算'}</span></div>
+      </div>
+      ${r.meterMode?`<div class="hint">目前里程 ${Number(r.meterReading).toFixed(1)} km · 自動換算本次里程</div>`:''}
+      <div class="btns"><button class="btn secondary" onclick="editRecord(${r.id})">編輯</button><button class="btn danger" onclick="deleteRecord(${r.id})">刪除</button></div>
+    </div>`;
+  }).join(''):'<div class="muted" style="padding:30px;text-align:center">目前沒有紀錄</div>';
+}
+function nav(page){
+  document.querySelectorAll('body section').forEach(s=>s.classList.add('hide'));
+  $(page).classList.remove('hide');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  if(page==='add'&&!editingId)resetForm(false);
+  scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>nav(b.dataset.page));
+function resetForm(setDate=true){
+  editingId=null;$('formTitle').textContent='新增紀錄';
+  if(setDate)
+let installPromptEvent=null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  installPromptEvent=e;
+});
+window.addEventListener('appinstalled', ()=>{
+  installPromptEvent=null;
+  const b=$('installBtn');
+  if(b) b.textContent='已安裝';
+});
+$('installBtn').onclick=async()=>{
+  const hint=$('installHint');
+  if(window.matchMedia('(display-mode: standalone)').matches){
+    hint.style.display='block';
+    hint.textContent='目前已經以 App 模式開啟。';
+    return;
+  }
+  if(installPromptEvent){
+    installPromptEvent.prompt();
+    const choice=await installPromptEvent.userChoice;
+    installPromptEvent=null;
+    hint.style.display='block';
+    hint.textContent=choice.outcome==='accepted'
+      ? '已送出安裝要求，完成後桌面會出現油耗分析圖示。'
+      : '已取消安裝。';
+  }else{
+    hint.style.display='block';
+    if(location.protocol!=='https:'){
+      hint.textContent='目前不是 HTTPS 網址，無法安裝成 PWA。請從 GitHub Pages 等 HTTPS 網址開啟。';
+    }else{
+      hint.textContent='Chrome 尚未提供安裝提示，請用右上角選單 →「安裝應用程式」或「新增至主畫面」。';
+    }
+  }
+};
+
+$('date').value=new Date().toISOString().slice(0,10);
+  $('fuel').value='95';$('liters').value='';$('distance').value='';$('checkout').value='';
+  $('meterMode').checked=false;$('meterReading').value='';updateMeter();
+}
+$('saveBtn').onclick=()=>{
+  const meterMode=$('meterMode').checked,liters=Number($('liters').value);
+  let distance=Number($('distance').value),meterReading=null;
+  if(meterMode){
+    meterReading=Number($('meterReading').value);
+    const base=previousBaseFor($('date').value,editingId);
+    if(!meterReading||base===null||meterReading<=base){alert('目前里程無法計算，請確認數值或改用手動輸入本次里程。');return}
+    distance=meterReading-base;
+  }
+  if(!$('date').value||!liters||!distance){alert('請完整輸入日期、加油公升與里程。');return}
+  const checkout=$('checkout').value===''?null:Number($('checkout').value);
+  const r={id:editingId||Date.now(),date:$('date').value,fuel:$('fuel').value,liters,distance,checkout,meterMode,meterReading};
+  if(editingId)records[records.findIndex(x=>x.id===editingId)]=r; else records.push(r);
+  store();resetForm();render();nav('home');
+};
+$('cancelBtn').onclick=()=>{resetForm();nav('home')};
+window.editRecord=id=>{
+  const r=records.find(x=>x.id===id);if(!r)return;
+  editingId=id;nav('add');$('formTitle').textContent='編輯紀錄';$('date').value=r.date;$('fuel').value=r.fuel;
+  $('liters').value=r.liters;$('distance').value=r.distance;$('checkout').value=r.checkout??'';
+  $('meterMode').checked=!!r.meterMode;$('meterReading').value=r.meterReading??'';updateMeter();
+};
+window.deleteRecord=id=>{if(confirm('確定刪除這筆紀錄？')){records=records.filter(r=>r.id!==id);store();render()}};
+$('clearAllBtn').onclick=()=>$('clearModal').classList.add('show');
+$('clearCancel').onclick=()=>$('clearModal').classList.remove('show');
+$('clearConfirm').onclick=()=>{records=[];store();$('clearModal').classList.remove('show');render();nav('home')};
+$('exportBtn').onclick=()=>{
+  if(!records.length){alert('目前沒有可匯出的資料。');return}
+  const rows=[['日期','油品','里程(km)','加油(L)','km/L','L/100km','牌價/L','結帳金額','目前里程']];
+  [...records].sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{const c=calc(r);rows.push([r.date,r.fuel,r.distance.toFixed(1),r.liters.toFixed(2),c.kmL.toFixed(2),c.l100.toFixed(2),c.p.toFixed(1),Math.round(c.paid),r.meterReading??''])});
+  const csv='\uFEFF'+rows.map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
+  const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download='油耗分析.csv';a.click();URL.revokeObjectURL(u);
+};
+let installPromptEvent=null;
+
+let pendingRestoreRecords=null;
+
+function downloadText(filename,text,type='application/json;charset=utf-8'){
+  const u=URL.createObjectURL(new Blob([text],{type}));
+  const a=document.createElement('a');
+  a.href=u;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),500);
+}
+
+$('backupBtn').onclick=()=>{
+  const payload={
+    app:'油耗分析',
+    version:1,
+    exportedAt:new Date().toISOString(),
+    recordCount:records.length,
+    records:records
+  };
+  const stamp=new Date().toISOString().slice(0,10);
+  downloadText(`油耗分析_完整備份_${stamp}.json`, JSON.stringify(payload,null,2));
+};
+
+$('restoreBtn').onclick=()=>{
+  $('restoreFile').value='';
+  $('restoreFile').click();
+};
+
+$('restoreFile').onchange=async e=>{
+  const file=e.target.files && e.target.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const data=JSON.parse(text);
+    const incoming=Array.isArray(data)?data:data.records;
+    if(!Array.isArray(incoming))throw new Error('備份格式不正確');
+
+    const cleaned=incoming.map((r,i)=>{
+      const date=String(r.date||'');
+      const fuel=String(r.fuel||'');
+      const liters=Number(r.liters);
+      const distance=Number(r.distance);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || !['92','95','98'].includes(fuel) || !(liters>0) || !(distance>0)){
+        throw new Error(`第 ${i+1} 筆資料格式不正確`);
+      }
+      return {
+        id:Number(r.id)||Date.now()+i,
+        date,
+        fuel,
+        liters,
+        distance,
+        checkout:(r.checkout===null||r.checkout===undefined||r.checkout==='')?null:Number(r.checkout),
+        meterMode:!!r.meterMode,
+        meterReading:(r.meterReading===null||r.meterReading===undefined||r.meterReading==='')?null:Number(r.meterReading)
+      };
+    });
+
+    pendingRestoreRecords=cleaned;
+    const dates=cleaned.map(r=>r.date).sort();
+    $('restoreSummary').innerHTML=
+      `備份共有 <b>${cleaned.length}</b> 筆紀錄`+
+      (cleaned.length?`<br>日期範圍：${dates[0]} ～ ${dates[dates.length-1]}`:'')+
+      `<br><br>還原後會覆蓋目前手機上的 ${records.length} 筆紀錄。`;
+    $('restoreModal').classList.add('show');
+  }catch(err){
+    alert('無法讀取此備份檔：'+err.message);
+  }
+};
+
+$('restoreCancel').onclick=()=>{
+  pendingRestoreRecords=null;
+  $('restoreModal').classList.remove('show');
+};
+
+$('restoreConfirm').onclick=()=>{
+  if(!pendingRestoreRecords)return;
+  records=pendingRestoreRecords;
+  pendingRestoreRecords=null;
+  store();
+  $('restoreModal').classList.remove('show');
+  render();
+  nav('home');
+  alert('備份已成功還原。');
+};
+
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  installPromptEvent=e;
+  deferredPrompt=e;
+  const s=document.getElementById('installStatus');
+  if(s)s.textContent='已偵測到可安裝，按上方「安裝 App」即可。';
+});
+window.addEventListener('appinstalled',()=>{
+  installPromptEvent=null;
+  deferredPrompt=null;
+  const s=document.getElementById('installStatus');
+  if(s)s.textContent='App 已安裝到手機。';
+  const b=document.getElementById('installBtn');
+  if(b)b.textContent='已安裝';
+});
+$('installBtn').onclick=async()=>{
+  const hint=$('installHint');
+  const status=document.getElementById('installStatus');
+  if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true){
+    if(hint)hint.style.display='block';
+    if(status)status.textContent='目前已經是 App 模式，不需要再次安裝。';
+    return;
+  }
+  const ev=installPromptEvent||deferredPrompt;
+  if(ev){
+    try{
+      await ev.prompt();
+      const choice=await ev.userChoice;
+      if(status)status.textContent=choice.outcome==='accepted'?'已送出安裝要求。':'你取消了安裝。';
+      installPromptEvent=null;
+      deferredPrompt=null;
+      if(hint)hint.style.display='block';
+      return;
+    }catch(err){}
+  }
+  if(hint)hint.style.display='block';
+  const isHttps=location.protocol==='https:';
+  const isFile=location.protocol==='file:';
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  if(status){
+    if(isFile){
+      status.textContent='目前是本機 HTML（file://），Chrome 不會提供 PWA 安裝。請先把完整 PWA 資料夾放到 HTTPS 網站。';
+    }else if(!isHttps){
+      status.textContent='目前不是 HTTPS 網址，因此無法直接安裝 PWA。';
+    }else if(!isAndroid){
+      status.textContent='目前瀏覽器沒有提供自動安裝提示，請用瀏覽器選單的「新增至主畫面／安裝應用程式」。';
+    }else{
+      status.textContent='Chrome 尚未提供安裝提示。請重新整理一次；若仍沒有，使用右上角 ⋮ →「新增至主畫面」或「安裝應用程式」。';
+    }
+  }
+};$('installHint').textContent='目前已經以 App 模式開啟。';return;
+  }
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    const choice=await deferredPrompt.userChoice;
+    if(choice.outcome==='accepted'){$('installHint').style.display='block';$('installHint').textContent='已送出安裝，完成後桌面會出現車子圖示。';}
+    deferredPrompt=null;
+  }else{
+    $('installHint').style.display='block';
+  }
+};
+$('date').value=new Date().toISOString().slice(0,10);
+
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+render();
+</script>
+</body></html>
