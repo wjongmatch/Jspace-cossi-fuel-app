@@ -256,43 +256,7 @@ function nav(page){
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>nav(b.dataset.page));
 function resetForm(setDate=true){
   editingId=null;$('formTitle').textContent='新增紀錄';
-  if(setDate)
-let installPromptEvent=null;
-window.addEventListener('beforeinstallprompt', (e)=>{
-  e.preventDefault();
-  installPromptEvent=e;
-});
-window.addEventListener('appinstalled', ()=>{
-  installPromptEvent=null;
-  const b=$('installBtn');
-  if(b) b.textContent='已安裝';
-});
-$('installBtn').onclick=async()=>{
-  const hint=$('installHint');
-  if(window.matchMedia('(display-mode: standalone)').matches){
-    hint.style.display='block';
-    hint.textContent='目前已經以 App 模式開啟。';
-    return;
-  }
-  if(installPromptEvent){
-    installPromptEvent.prompt();
-    const choice=await installPromptEvent.userChoice;
-    installPromptEvent=null;
-    hint.style.display='block';
-    hint.textContent=choice.outcome==='accepted'
-      ? '已送出安裝要求，完成後桌面會出現油耗分析圖示。'
-      : '已取消安裝。';
-  }else{
-    hint.style.display='block';
-    if(location.protocol!=='https:'){
-      hint.textContent='目前不是 HTTPS 網址，無法安裝成 PWA。請從 GitHub Pages 等 HTTPS 網址開啟。';
-    }else{
-      hint.textContent='Chrome 尚未提供安裝提示，請用右上角選單 →「安裝應用程式」或「新增至主畫面」。';
-    }
-  }
-};
-
-$('date').value=new Date().toISOString().slice(0,10);
+  if(setDate)$('date').value=new Date().toISOString().slice(0,10);
   $('fuel').value='95';$('liters').value='';$('distance').value='';$('checkout').value='';
   $('meterMode').checked=false;$('meterReading').value='';updateMeter();
 }
@@ -329,8 +293,6 @@ $('exportBtn').onclick=()=>{
   const csv='\uFEFF'+rows.map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
   const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download='油耗分析.csv';a.click();URL.revokeObjectURL(u);
 };
-let installPromptEvent=null;
-
 let pendingRestoreRecords=null;
 
 function downloadText(filename,text,type='application/json;charset=utf-8'){
@@ -416,65 +378,32 @@ $('restoreConfirm').onclick=()=>{
 };
 
 
+
+let installPromptEvent=null;
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
   installPromptEvent=e;
-  deferredPrompt=e;
-  const s=document.getElementById('installStatus');
-  if(s)s.textContent='已偵測到可安裝，按上方「安裝 App」即可。';
 });
 window.addEventListener('appinstalled',()=>{
   installPromptEvent=null;
-  deferredPrompt=null;
-  const s=document.getElementById('installStatus');
-  if(s)s.textContent='App 已安裝到手機。';
-  const b=document.getElementById('installBtn');
-  if(b)b.textContent='已安裝';
+  $('installBtn').textContent='已安裝';
 });
 $('installBtn').onclick=async()=>{
   const hint=$('installHint');
-  const status=document.getElementById('installStatus');
-  if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true){
-    if(hint)hint.style.display='block';
-    if(status)status.textContent='目前已經是 App 模式，不需要再次安裝。';
+  if(window.matchMedia('(display-mode: standalone)').matches){
+    hint.style.display='block';
+    hint.textContent='目前已經以 App 模式開啟。';
     return;
   }
-  const ev=installPromptEvent||deferredPrompt;
-  if(ev){
-    try{
-      await ev.prompt();
-      const choice=await ev.userChoice;
-      if(status)status.textContent=choice.outcome==='accepted'?'已送出安裝要求。':'你取消了安裝。';
-      installPromptEvent=null;
-      deferredPrompt=null;
-      if(hint)hint.style.display='block';
-      return;
-    }catch(err){}
-  }
-  if(hint)hint.style.display='block';
-  const isHttps=location.protocol==='https:';
-  const isFile=location.protocol==='file:';
-  const isAndroid=/Android/i.test(navigator.userAgent);
-  if(status){
-    if(isFile){
-      status.textContent='目前是本機 HTML（file://），Chrome 不會提供 PWA 安裝。請先把完整 PWA 資料夾放到 HTTPS 網站。';
-    }else if(!isHttps){
-      status.textContent='目前不是 HTTPS 網址，因此無法直接安裝 PWA。';
-    }else if(!isAndroid){
-      status.textContent='目前瀏覽器沒有提供自動安裝提示，請用瀏覽器選單的「新增至主畫面／安裝應用程式」。';
-    }else{
-      status.textContent='Chrome 尚未提供安裝提示。請重新整理一次；若仍沒有，使用右上角 ⋮ →「新增至主畫面」或「安裝應用程式」。';
-    }
-  }
-};$('installHint').textContent='目前已經以 App 模式開啟。';return;
-  }
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    const choice=await deferredPrompt.userChoice;
-    if(choice.outcome==='accepted'){$('installHint').style.display='block';$('installHint').textContent='已送出安裝，完成後桌面會出現車子圖示。';}
-    deferredPrompt=null;
+  if(installPromptEvent){
+    installPromptEvent.prompt();
+    const choice=await installPromptEvent.userChoice;
+    installPromptEvent=null;
+    hint.style.display='block';
+    hint.textContent=choice.outcome==='accepted'?'已送出安裝要求。':'已取消安裝。';
   }else{
-    $('installHint').style.display='block';
+    hint.style.display='block';
+    hint.textContent='請使用 Chrome 選單的「安裝應用程式」或「新增至主畫面」。';
   }
 };
 $('date').value=new Date().toISOString().slice(0,10);
