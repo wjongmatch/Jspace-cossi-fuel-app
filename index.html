@@ -74,7 +74,7 @@ border-top:1px solid #1f334c;padding:9px 10px calc(9px + env(safe-area-inset-bot
 <body>
 <div class="app">
 <header class="top">
-  <div><h1>油耗分析</h1><small>JSPACE Cossi</small></div>
+  <div><h1>油耗分析</h1><small>JSPACE Cossi · v15</small></div>
   <button class="btn secondary" id="installBtn">安裝到桌面</button>
 </header>
 <div class="installHint" id="installHint">Android Chrome：按「安裝 App」後會開啟系統安裝視窗，確認後桌面會出現車子圖示。iPhone/iPad 需用 Safari 的「分享 → 加入主畫面」。</div>
@@ -162,8 +162,22 @@ border-top:1px solid #1f334c;padding:9px 10px calc(9px + env(safe-area-inset-bot
 </div></nav>
 
 <script>
-const SEED=[{"id": 1, "date": "2026-08-18", "fuel": "92", "liters": 31.96, "distance": 303.0, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 2, "date": "2026-08-20", "fuel": "92", "liters": 33.56, "distance": 282.0, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 3, "date": "2026-08-26", "fuel": "92", "liters": 31.8, "distance": 200.3, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 4, "date": "2026-08-26", "fuel": "92", "liters": 33.03, "distance": 345.9, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 5, "date": "2026-08-30", "fuel": "92", "liters": 35.83, "distance": 342.8, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 6, "date": "2026-08-29", "fuel": "92", "liters": 32.4, "distance": 304.2, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 7, "date": "2026-08-29", "fuel": "92", "liters": 27.98, "distance": 248.5, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 8, "date": "2026-09-01", "fuel": "95", "liters": 32.55, "distance": 312.0, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 9, "date": "2026-09-03", "fuel": "95", "liters": 32.41, "distance": 327.1, "checkout": null, "meterMode": false, "meterReading": null}, {"id": 10, "date": "2026-09-07", "fuel": "95", "liters": 34.66, "distance": 324.4, "checkout": null, "meterMode": false, "meterReading": 324.4}, {"id": 11, "date": "2026-09-09", "fuel": "95", "liters": 31.62, "distance": 328.1, "checkout": null, "meterMode": true, "meterReading": 652.5}], PRICES=[["2026-08-01", 30.5, 32.0, 34.0], ["2026-09-01", 30.5, 32.0, 34.0]], KEY='oil-analysis-records-v10';
-let records=JSON.parse(localStorage.getItem(KEY)||'null')||SEED;
+window.addEventListener('error',function(e){
+  const box=document.getElementById('jsErrorBox');
+  const txt=document.getElementById('jsErrorText');
+  if(box&&txt){ box.style.display='block'; txt.textContent=(e.message||'未知錯誤')+' @ '+(e.lineno||'?'); }
+});
+
+const SEED=[{"id":1,"date":"2026-08-18","fuel":"92","liters":33.56,"distance":282.0,"checkout":null,"meterMode":false,"meterReading":null},{"id":2,"date":"2026-08-20","fuel":"92","liters":31.8,"distance":200.3,"checkout":null,"meterMode":false,"meterReading":null},{"id":3,"date":"2026-08-29","fuel":"92","liters":27.98,"distance":248.5,"checkout":null,"meterMode":false,"meterReading":null},{"id":4,"date":"2026-08-30","fuel":"92","liters":35.83,"distance":342.8,"checkout":null,"meterMode":false,"meterReading":null},{"id":5,"date":"2026-09-01","fuel":"95","liters":32.55,"distance":312.0,"checkout":null,"meterMode":false,"meterReading":null},{"id":6,"date":"2026-09-03","fuel":"95","liters":32.41,"distance":327.1,"checkout":null,"meterMode":false,"meterReading":null},{"id":7,"date":"2026-09-07","fuel":"95","liters":34.66,"distance":324.4,"checkout":null,"meterMode":false,"meterReading":324.4},{"id":8,"date":"2026-09-09","fuel":"95","liters":31.62,"distance":328.1,"checkout":null,"meterMode":true,"meterReading":652.5}], PRICES=[["2026-08-01", 30.5, 32.0, 34.0], ["2026-09-01", 30.5, 32.0, 34.0]], KEY='oil-analysis-records-v10';
+let records;
+try{
+  const saved=localStorage.getItem(KEY);
+  const parsed=saved ? JSON.parse(saved) : null;
+  records=Array.isArray(parsed) ? parsed : SEED.map(r=>({...r}));
+}catch(e){
+  localStorage.removeItem(KEY);
+  records=SEED.map(r=>({...r}));
+}
 let editingId=null,deferredPrompt=null;
 const $=id=>document.getElementById(id);
 
@@ -408,7 +422,22 @@ $('installBtn').onclick=async()=>{
 };
 $('date').value=new Date().toISOString().slice(0,10);
 
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+if('serviceWorker' in navigator){
+  window.addEventListener('load',async()=>{
+    try{
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const r of regs) await r.unregister();
+      const keys=await caches.keys();
+      for(const k of keys) await caches.delete(k);
+    }catch(e){}
+  });
+}
 render();
 </script>
+
+<div id="jsErrorBox" style="display:none;position:fixed;left:12px;right:12px;top:12px;z-index:9999;
+background:#7f1d1d;color:white;border:2px solid #fecaca;border-radius:14px;padding:14px;font-size:15px;line-height:1.45">
+<b>程式啟動失敗</b><div id="jsErrorText"></div>
+</div>
+
 </body></html>
